@@ -28,6 +28,59 @@ jobs:
         registry: ${{ env.REGISTRY }}
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: generate the image name
+      id: generate-name
+      run: echo "IMAGE=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}" >> ${GITHUB_ENV}
+        
+    - name: Build and push Docker image
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        push: true
+        file: ./Dockerfile
+        tags: ${{ env.IMAGE }}
+
+  #在阿里云ECS服务器上部署，使用ssh
+  deploy-on-aliECS:
+    needs: build-and-push-image
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
     
-    - name: Build the Docker image
-      run: docker build . --file Dockerfile --tag my-image-name:$(date +%s)
+    - name: ssh-to-ECS
+      uses: appleboy/ssh-action@v1.0.3
+      env:
+        IMAGE: ${{ env.IMAGE }}
+        ACCESS_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        command_timeout: 30s
+        host: ${{ secrets.HOST }}
+        username: ${{ secrets.USERNAME }}
+        password: ${{ secrets.PASSWORD }}
+        envs: IMAGE
+        script: | # 运行多行命令
+            echo "[deploy] start deployment..."
+            if [ ! -d "$app" ]; then
+              mkdir "$app"
+            fi
+            # 进到当前文件夹
+            cd ~/app
+
+            # 停止服务
+
+            docker container stop `docker ps -aq`
+            docker rm -f $(docker ps -aq)
+            docker rmi -f $(docker images -q)
+            pkill python3
+
+            #拉取镜像文件
+            echo $ACCESS_TOKEN | docker login ghcr.io -u emptydream-zdb --password-stdin
+            docker pull $IMAGE
+            docker run --network host -d $IMAGE python ./test.py
+
+      
+  
+        
+
+        
