@@ -52,7 +52,7 @@ jobs:
       uses: appleboy/ssh-action@v1.0.3
       env:
         IMAGE: ${{ env.IMAGE }}
-        ACCESS_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        ACCESS_TOKEN: ${{ secrets.TOKEN_GITHUB }}
       with:
         command_timeout: 30s
         host: ${{ secrets.HOST }}
