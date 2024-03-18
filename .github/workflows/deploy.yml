@@ -78,6 +78,7 @@ jobs:
             echo $ACCESS_TOKEN | docker login ghcr.io -u emptydream-zdb --password-stdin
             docker pull $IMAGE
             docker run --network host -d $IMAGE python ./test.py
+            # 测试阶段
 
       
   
