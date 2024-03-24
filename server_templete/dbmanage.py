@@ -31,7 +31,7 @@ class Database:
             
             async with self.pool.acquire() as conn:
                 async with conn.cursor() as cur:
-                    await cur.execute(f"CREATE DATABASE IF NOT EXISTS {self.db}")
+                    await cur.execute(f"CREATE DATABASE IF NOT EXISTS {self.db} CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci")
 
             self.pool.close()
             await self.pool.wait_closed()
@@ -39,7 +39,7 @@ class Database:
             self.pool = await aiomysql.create_pool(
                 host=self.host, port=self.port,
                 user=self.user, password=self.password,
-                db=self.db, loop=loop)
+                db=self.db, loop=loop,charset='utf8mb4')
 
     async def stop(self) -> None:
         """
