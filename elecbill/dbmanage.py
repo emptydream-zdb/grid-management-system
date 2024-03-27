@@ -85,3 +85,15 @@ class Database:
                 async with conn.cursor() as cur:
                     await cur.execute(query, args)
                     return await cur.fetchall()
+
+    async def init_table(self):
+        """
+        Create the table if it doesn't exist
+        """
+        query = """
+        CREATE TABLE IF NOT EXISTS elecbill (
+            id VARCHAR(20) NOT NULL PRIMARY KEY,
+            bill DOUBLE(16,2) NOT NULL
+        )
+        """
+        await self.execute([query])
