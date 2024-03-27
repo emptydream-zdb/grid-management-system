@@ -2,27 +2,24 @@ from sanic import Sanic, response
 from dbmanage import Database
 import pymysql
 
-from elecbill import initelecbill, elecbill, data
-
-port_run = 8010
+from routes import initelecbill, elecbill, data
+from load_config import *
 
 app = Sanic("elecbillApp")
 
 @app.listener('before_server_start')
-async def setup_db(app, loop):
+async def setup(app, loop):
     """
-    Set up the database connection before the server starts.
+    Set up before the server starts.
     add the database connection to the app context so that we can access it in HTTPMethodView.
     
     Args:
         app: The Sanic application object.
         loop: The event loop to use for the database connection.
     """
-    user = "root"
-    password = "22654298"
-    database = "elecdata"
+
     try:
-        app.ctx.db = Database("127.0.0.1", 3306, user, password, database)
+        app.ctx.db = Database(db['host'], db['port'], db['user'], db['password'], db['database'])
         await app.ctx.db.start(loop)
         await app.ctx.db.init_table()
     except pymysql.err.OperationalError as e:
@@ -42,4 +39,4 @@ app.add_route(data.as_view(), "/data/v1/<id>", name= "data")
 
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=port_run)
+    app.run(host=server['host'], port=server['port'])
