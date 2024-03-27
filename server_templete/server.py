@@ -2,16 +2,10 @@ from sanic import Sanic
 from sanic.response import json
 from sanic import Request
 from dbmanage import Database
-import sys
 
 from templete_view import templete_view
 
-host = sys.argv[1]
-port = sys.argv[2]
-user = sys.argv[3]
-password = sys.argv[4]
-database = sys.argv[5]
-
+port_run = 10000 # your port number
 
 app = Sanic("templete_view")
 
@@ -25,7 +19,10 @@ async def setup_db(app, loop):
         app: The Sanic application object.
         loop: The event loop to use for the database connection.
     """
-    app.ctx.db = Database(host, port, user, password, database)
+    user = "<your_user_name>"
+    password = "<your_password>"
+    database = "<your_database_name>"
+    app.ctx.db = Database("127.0.0.1", 3306, user, password, database)
     await app.ctx.db.start(loop)
 
 @app.listener('after_server_stop')
@@ -35,4 +32,4 @@ async def close_db(app, loop):
 app.add_route(templete_view.as_view(), "/routing", name= "templete_view")
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=10000)
+    app.run(host="0.0.0.0", port=port_run)

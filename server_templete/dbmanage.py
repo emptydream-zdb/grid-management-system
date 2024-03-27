@@ -27,7 +27,7 @@ class Database:
             self.pool = await aiomysql.create_pool(
                 host=self.host, port=self.port,
                 user=self.user, password=self.password,
-                db=self.db, loop=loop)
+                loop=loop)
             
             async with self.pool.acquire() as conn:
                 async with conn.cursor() as cur:
