@@ -1,8 +1,10 @@
+import sys
+sys.path.append("..")
 from sanic import Sanic
 from sanic.response import json
 from sanic import Request
 from utils import Database
-import sys
+
 
 from user_manager import user_manager_view, init_table
 
@@ -28,8 +30,8 @@ async def setup_db(app, loop):
 async def close_db(app, loop):
     await app.ctx.db.stop()
 
-app.add_route(user_manager_view.as_view(), "/user/v1", methods=['POST', 'PUT', 'DELETE'], name="user_manager")
-app.add_route(user_manager_view.as_view(), "/user/v1/<id>", methods=['GET'], name="user_manager_id")
+app.add_route(user_manager_view.as_view(), "/user/v1", methods=['POST', 'DELETE'], name="user_manager")
+app.add_route(user_manager_view.as_view(), "/user/v1/<id>", methods=['GET', 'PUT'], name="user_manager_id")
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=port_run, dev=True)

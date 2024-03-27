@@ -19,7 +19,7 @@ async def init_table(app) -> None:
                 work_unit VARCHAR(255) NOT NULL
             );
         """
-        await app.ctx.db.execute([sql])
+        await app.ctx.db.execute(sql)
 
 class user_manager_view(HTTPMethodView):
 
@@ -28,13 +28,16 @@ class user_manager_view(HTTPMethodView):
         add a user to the database
         """
         req = request.json
-        await self.init_table(request)
+        sql = "SELECT id_room FROM user WHERE id_user = %s"
+        result = await request.app.ctx.db.fetch(sql, args=(req["id_user"]))
+        if result != []:
+            return json({"msg": "User already exist"}, status=400)
         sql = """
             INSERT INTO user (id_user, id_room, name, password, user_group, work_unit)
             VALUES (%s, %s, %s, %s, %s, %s);
         """
         try:
-            await request.app.ctx.db.execute([sql], args=[(req["id_user"], req["id_room"], req["name"], req["password"], req["user_group"], req["work_unit"])])
+            await request.app.ctx.db.execute(sql, args=(req["id_user"], req["id_room"], req["name"], req["password"], req["user_group"], req["work_unit"]))
         except Exception as e:
             return json({"msg": "User not added error, error:{}".format(str(e))}, status=400)
         return json({"msg": "User added successfully"})
@@ -44,7 +47,7 @@ class user_manager_view(HTTPMethodView):
         get a user or it's password from the database
         """
         req = request.json
-        if request.args.get("class") == "user":
+        if request.args.get("class") == "user":            
             if request.args.get("passwd") != None:
                 sql = "SELECT password FROM user WHERE id_user = %s"
                 try:
@@ -90,17 +93,36 @@ class user_manager_view(HTTPMethodView):
         
         sql = "DELETE FROM user WHERE id_user = %s"
         try:
-            await request.app.ctx.db.execute([sql], args=[(req["id_user"])])
+            await request.app.ctx.db.execute(sql, args=(req["id_user"]))
         except Exception as e:
             return json({"msg": "User not deleted, error:{}".format(str(e))}, status=400)
         return json({"msg": "User delete successfully"})
     
-    async def put(self, request):
+    async def put(self, request, id):
         """
-        TODO: update a user in the database
+        update a user in the database
         """
         req = request.json
-        return json({"msg": "User added successfully"})
+        sql = "SELECT password FROM user WHERE id_user = %s"
+        try:
+            result = await request.app.ctx.db.fetch(sql, args=[(id)])
+        except Exception as e:
+            return json({"msg": "update fail!, error:{}".format(str(e))}, status=400)
+        if result == []:
+            return json({"msg": "User not exist"}, status=400)
+        update_items = []
+        args = []
+        for key, value in req.items():
+            update_items.append(f"{key} = %s")
+            args.append(value)
+        update_str = ", ".join(update_items)
+        args.append(id)
+        sql = f"UPDATE user SET {update_str} WHERE id_user = %s"
+        try:
+            await request.app.ctx.db.execute(sql, args=tuple(args))
+        except Exception as e:
+            return json({"msg": "User not updated, error:{}".format(str(e))}, status=400)
+        return json({"msg": "User updated successfully"})
 
 
 
