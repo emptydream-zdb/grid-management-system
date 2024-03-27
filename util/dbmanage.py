@@ -1,4 +1,5 @@
 import aiomysql
+from aiomysql import DictCursor
 
 class Database:
     """
@@ -82,6 +83,7 @@ class Database:
                 list: A list of tuples representing the fetched results.
             """
             async with self.pool.acquire() as conn:
-                async with conn.cursor() as cur:
+                async with conn.cursor(DictCursor) as cur:
                     await cur.execute(query, args)
-                    return await cur.fetchall()
+                    result = await cur.fetchall()
+                    return result if result else []
