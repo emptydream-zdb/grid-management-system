@@ -1,6 +1,5 @@
 from sanic.views import HTTPMethodView
 from sanic.response import json
-from dbmanage import Database
 
 class templete_view(HTTPMethodView):
 
