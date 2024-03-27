@@ -1,7 +1,6 @@
 from sanic import Sanic
 from sanic.response import json
-from sanic import Request
-from dbmanage import Database
+from utils import Database
 
 from templete_view import templete_view
 
