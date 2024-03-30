@@ -1,5 +1,5 @@
 from sanic import Sanic, response
-from dbmanage import Database
+from dbmanage import DB
 import pymysql
 
 from routes import initelecbill, elecbill, data
@@ -19,7 +19,7 @@ async def setup(app, loop):
     """
 
     try:
-        app.ctx.db = Database(db['host'], db['port'], db['user'], db['password'], db['database'])
+        app.ctx.db = DB(db['host'], db['port'], db['user'], db['password'], db['name'])
         await app.ctx.db.start(loop)
         await app.ctx.db.init_table()
     except pymysql.err.OperationalError as e:
@@ -39,4 +39,4 @@ app.add_route(data.as_view(), "/data/v1/<id>", name= "data")
 
 
 if __name__ == "__main__":
-    app.run(host=server['host'], port=server['port'])
+    app.run(host=server['host'], port=server['port'], dev=True)

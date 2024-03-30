@@ -9,11 +9,11 @@ db = {
     'user': config.get("database", "username"),
     'password': config.get("database", "password"),
     'name': config.get("database", "database"),
-    'port': config.get("database", "port"),
+    'port': int(config.get("database", "port")),
     'host': config.get("database", "host")
 }
 
 server = {
     'host': config.get("server", "host"),
-    'port': config.get("server", "port")
+    'port': int(config.get("server", "port"))
 }

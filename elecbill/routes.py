@@ -7,12 +7,11 @@ class initelecbill(HTTPMethodView):
     async def get(self, request, id):
         db = request.app.ctx.db
         sql = '''
-            INSERT INTO users (id, elecbill)
-            VALUES (?, ?)
+            INSERT INTO elecbill (id, bill) VALUES (%s, %s)
         '''
-        if not db.fetch('SELECT item FROM id WHERE item = ?', (id,)):
-            db.execute([sql], (id, 0))
-            return json({"message": "User added successfully"})
+        if await db.fetch('SELECT id FROM elecbill WHERE id = %s', id) == []:
+            await db.execute(sql, (id, 0))
+            return json({"message": "data added successfully"})
         else:
             return json({"message": "id already exists"}, status=400)
 
