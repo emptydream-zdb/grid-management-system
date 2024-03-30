@@ -1,7 +1,7 @@
+import sys
+sys.path.append("..") # 添加父级目录到系统路径,以解决模块导入问题
 from sanic import Sanic
-from sanic.response import json
 from utils import Database
-
 from templete_view import templete_view
 
 port_run = 10000 # your port number

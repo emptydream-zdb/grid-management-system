@@ -54,8 +54,8 @@ class Database:
         Executes the given SQL queries with optional arguments.
 
         Args:
-            queries (list): The SQL queries to execute.
-            args (list, optional): The arguments to pass to the queries. Defaults to None. 
+            queries : The SQL queries to execute. now the arg type can be list or str
+            args optional: The arguments to pass to the queries. Defaults to None. 
             args should be as long as queries or absolutely a None, can't be shorter than queries.
 
         Returns:
@@ -67,6 +67,9 @@ class Database:
         """
         async with self.pool.acquire() as conn:
             async with conn.cursor() as cur:
+                if type(queries) != list:
+                    queries = [queries]
+                    args = [args]
                 for i, query in enumerate(queries):
                     await cur.execute(query, args[i] if args else None)
                 await conn.commit()
