@@ -1,7 +1,5 @@
 from sanic.views import HTTPMethodView
-from sanic.response import json
-import logging
-import jsonschema # use to verify request parm
+from sanic.response import json, HTTPResponse
 
 async def init_table(app) -> None:
         """
@@ -39,7 +37,7 @@ class user_manager_view(HTTPMethodView):
         try:
             await request.app.ctx.db.execute(sql, args=(req["id_user"], req["id_room"], req["name"], req["password"], req["user_group"], req["work_unit"]))
         except Exception as e:
-            return json({"msg": "User not added error, error:{}".format(str(e))}, status=400)
+            return json({"msg": "User not added, error:{}".format(str(e))}, status=400)
         return json({"msg": "User added successfully"})
     
     async def get(self, request, id):
@@ -96,7 +94,7 @@ class user_manager_view(HTTPMethodView):
             await request.app.ctx.db.execute(sql, args=(req["id_user"]))
         except Exception as e:
             return json({"msg": "User not deleted, error:{}".format(str(e))}, status=400)
-        return json({"msg": "User delete successfully"})
+        return HTTPResponse(status=204)
     
     async def put(self, request, id):
         """
