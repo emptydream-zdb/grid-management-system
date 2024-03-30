@@ -16,10 +16,16 @@ class DB(Database):
         """
         Create the table if it doesn't exist
         """
-        query = """
+        query = ["""
         CREATE TABLE IF NOT EXISTS elecbill (
             id VARCHAR(20) NOT NULL PRIMARY KEY,
             bill DOUBLE(16,2) NOT NULL
         )
+        """,
         """
-        await self.execute([query])
+        CREATE TABLE IF NOT EXISTS elecdata (
+            id VARCHAR(20) NOT NULL PRIMARY KEY,
+            data DOUBLE(16,2) NOT NULL
+        )
+        """]
+        await self.execute(query)

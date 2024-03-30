@@ -16,17 +16,38 @@ class initelecbill(HTTPMethodView):
             return json({"message": "id already exists"}, status=400)
 
 
-class elecbill(HTTPMethodView):
+class elecbill_id(HTTPMethodView):
 
     async def get(self, request, id):
-        pass
-    
-    async def put(self, request, id):
-        pass
+        db = request.app.ctx.db
+        sql = '''
+            SELECT bill FROM elecbill WHERE id = %s
+        '''
+        res = await db.fetch(sql, id)
+        if res == []:
+            return json({"msg": "id not exist!"}, status=410)
+        else:
+            return json({"data": {"elecbill": res[0]}})
 
     async def delete(self, request, id):
         pass
 
+class elecbill(HTTPMethodView):
+
+    async def put(self, request):
+        db = request.app.ctx.db
+        sql = '''
+                UPDATE elecbill SET bill = %s WHERE id = %s
+            '''
+        req = request.json
+        cur = await db.fetch('SELECT bill FROM elecbill WHERE id = %s', req['id'])
+        cur = cur[0]['bill']
+        if cur == []:
+            return json({"msg": "id not exist!"}, status=410)
+        else:
+            res = cur + req['num']
+            await db.execute(sql, (res, req['id']))
+        return json({"data":{"elecbill": res}}, status=200)
 
 class data(HTTPMethodView):
     
