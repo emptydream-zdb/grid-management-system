@@ -6,7 +6,7 @@ from sanic import Request
 from utils import Database
 
 
-from user_manager import user_manager_view, init_table
+from user_manage import user_manager_view, init_table
 
 port_run = 8001
 
