@@ -34,9 +34,10 @@ async def close_db(app, loop):
 
 
 app.add_route(initelecbill.as_view(), "/initelecbill/v1/<id>", name= "initelecbill")
-app.add_route(elecbill.as_view(), "/elecbill/v1/<id>", name= "elecbill_id", methods=['GET', 'DELETE '])
+app.add_route(elecbill.as_view(), "/elecbill/v1/<id>", name= "elecbill_id", methods=['GET', 'DELETE'])
 app.add_route(elecbill.as_view(), "/elecbill/v1/", name= "elecbill", methods=['PUT'])
 app.add_route(data.as_view(), "/data/v1/<id>", name= "data")
+app.add_route(data.as_view(), "/data/v1/", name= "data_id")
 
 
 if __name__ == "__main__":

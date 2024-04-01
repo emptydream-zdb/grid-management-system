@@ -4,4 +4,4 @@ This package contains utility class and functions that are used throughout the p
 from .dbmanage import Database
 
 
-__all__ = ['Database']
+__all__ = ['Database', 'Snowflake']
