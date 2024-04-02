@@ -23,16 +23,16 @@ class DB(Database):
         )
         """,
         """
-        CREATE TABLE IF NOT EXISTS data_day (
-            uid VARCHAR(20) NOT NULL PRIMARY KEY,
+        CREATE TABLE IF NOT EXISTS elecdata_day (
+            uuid BIGINT NOT NULL PRIMARY KEY,
             id VARCHAR(20) NOT NULL,
             data DOUBLE(16,2) NOT NULL,
             time TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL
         )
         """,
         """
-        CREATE TABLE IF NOT EXISTS data_hour (
-            uid VARCHAR(20) NOT NULL PRIMARY KEY,
+        CREATE TABLE IF NOT EXISTS elecdata_hour (
+            uuid BIGINT NOT NULL PRIMARY KEY,
             id VARCHAR(20) NOT NULL,
             data DOUBLE(16,2) NOT NULL,
             time TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL
