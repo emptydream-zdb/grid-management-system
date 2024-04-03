@@ -35,7 +35,7 @@ class user_manager_view(HTTPMethodView):
             VALUES (%s, %s, %s, %s, %s, %s);
         """
         try:
-            await request.app.ctx.db.execute(sql, args=(req["id_user"], req["id_room"], req["name"], req["password"], req["user_group"], req["work_unit"]))
+            await request.app.ctx.db.execute(sql, args=(req["id_user"], req["id_room"], req["name"], req["password"], req["group"], req["work_unit"]))
         except Exception as e:
             return json({"msg": "User not added, error:{}".format(str(e))}, status=400)
         return json({"msg": "User added successfully"})
@@ -61,6 +61,9 @@ class user_manager_view(HTTPMethodView):
                     return json({"msg": "query fail, error:{}".format(str(e))}, status=400)
                 if result == []:
                     return json({"msg": "User not found"}, status=400)
+                for x in result:
+                    x["group"] = x["user_group"]
+                    del x["user_group"]
                 return json({"msg":"success!","data": result})
         else:
             sql = "SELECT * FROM user WHERE id_room = %s"
@@ -108,6 +111,9 @@ class user_manager_view(HTTPMethodView):
             return json({"msg": "update fail!, error:{}".format(str(e))}, status=400)
         if result == []:
             return json({"msg": "User not exist"}, status=400)
+        if req.get("group") != None:
+            req["user_group"] = req["group"]
+            del req["group"]
         update_items = []
         args = []
         for key, value in req.items():
