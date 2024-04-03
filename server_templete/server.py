@@ -1,5 +1,9 @@
-import sys
-sys.path.append("..") # 添加父级目录到系统路径,以解决模块导入问题
+import sys, os
+current_file_dir = os.path.dirname(__file__) # 获取当前文件的父目录
+parent_dir = os.path.join(current_file_dir, "../") # 获取父目录
+sys.path.append(parent_dir) # 添加父级目录到系统路径,以解决模块导入问题
+
+
 from sanic import Sanic
 from utils import Database
 from templete_view import templete_view

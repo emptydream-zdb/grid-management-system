@@ -1,8 +1,10 @@
 from sanic.views import HTTPMethodView
 from sanic.response import json
+from sanic_ext import validate
 
 class templete_view(HTTPMethodView):
-
+    
+    @validate
     async def post(self, request):
         req = request.json
         return json({"message": "User added successfully"})
