@@ -1,7 +1,9 @@
 from sanic.response.types import JSONResponse
 from sanic.views import HTTPMethodView
 from sanic.response import json, HTTPResponse
-import uuid
+from utils import Snowflake
+
+snowflake = Snowflake(datacenter_id=0, worker_id=3)
 
 async def init_table(app) -> None:
         """
@@ -11,7 +13,7 @@ async def init_table(app) -> None:
         """
         sql = """
             CREATE TABLE IF NOT EXISTS event (
-                id_event CHAR(32) PRIMARY KEY,
+                id_event BIGINT PRIMARY KEY,
                 id_room VARCHAR(20) NOT NULL,
                 time_start VARCHAR(25) NOT NULL,
                 time_end VARCHAR(25) DEFAULT '',
@@ -26,7 +28,7 @@ def gen_event_id() -> str:
     """
     Generate a unique id for the event.
     """
-    return uuid.uuid4().hex
+    return snowflake.generate_uuid()
 
 class event_manager_view(HTTPMethodView):
 
@@ -64,29 +66,29 @@ class event_manager_view(HTTPMethodView):
         if limit is None or limit == "":
             if state is None or state == "":
                 sql = """
-                    SELECT * FROM event WHERE id_room LIKE %s ORDER BY id_event DESC;
+                    SELECT * FROM event WHERE id_room LIKE %s ORDER BY state ASC, id_event DESC;
                 """
                 try:
-                    result = await request.app.ctx.db.fetch(sql, (id))
+                    result = await request.app.ctx.db.fetch(sql, (pattern))
                 except Exception as e:
-                    return json({"msg": "Event add fail, error: {}".format(str(e))}, status=400)
+                    return json({"msg": "Get event fail, error: {}".format(str(e))}, status=400)
             else:
                 sql = """
                     SELECT * FROM event WHERE id_room LIKE %s AND state = %s ORDER BY id_event DESC;
                 """
                 try:
-                    result = await request.app.ctx.db.fetch(sql, (id, state))
+                    result = await request.app.ctx.db.fetch(sql, (pattern, state))
                 except Exception as e:
-                    return json({"msg": "Event add fail, error: {}".format(str(e))}, status=400)
+                    return json({"msg": "Get event fail, error: {}".format(str(e))}, status=400)
             
         else:
             limit = int(limit)
             if state is None or state == "":
                 sql = """
-                    SELECT * FROM event WHERE id_room LIKE %s ORDER BY id_event DESC LIMIT %s;
+                    SELECT * FROM event WHERE id_room LIKE %s ORDER BY state ASC, id_event DESC LIMIT %s;
                 """
                 try:
-                    result = await request.app.ctx.db.fetch(sql, (id, limit))
+                    result = await request.app.ctx.db.fetch(sql, (pattern, limit))
                 except Exception as e:
                     return json({"msg": "Get event fail, error: {}".format(str(e))}, status=400)
             else:
@@ -94,10 +96,11 @@ class event_manager_view(HTTPMethodView):
                     SELECT * FROM event WHERE id_room LIKE %s AND state = %s ORDER BY id_event DESC LIMIT %s;
                 """
                 try:
-                    result = await request.app.ctx.db.fetch(sql, (id, state, limit))
+                    result = await request.app.ctx.db.fetch(sql, (pattern, state, limit))
                 except Exception as e:
                     return json({"msg": "Get event fail, error: {}".format(str(e))}, status=400)
-        
+        for item in result:
+            item["id_event"] = str(item["id_event"])
         return json({"msg": "successfully", "data": result})
 
     
@@ -106,8 +109,9 @@ class event_manager_view(HTTPMethodView):
         sql = """
             SELECT COUNT(*) FROM event WHERE id_event = %s;
         """
+        id = int(id)
         try:
-            result = await request.app.ctx.db.fetch(sql, (id))
+            result = await request.app.ctx.db.fetch(sql, (id,))
         except Exception as e:
             return json({"msg": "Event update fail, error: {}".format(str(e))}, status=400)
         if result[0]["COUNT(*)"] == 0:
@@ -125,8 +129,9 @@ class event_manager_view(HTTPMethodView):
         sql = """
             SELECT * FROM event WHERE id_event = %s;
         """
+        id = int(id)
         try:
-            result = await request.app.ctx.db.fetch(sql, (id))
+            result = await request.app.ctx.db.fetch(sql, (id,))
         except Exception as e:
             return json({"msg": "Event delete fail, error: {}".format(str(e))}, status=400)
         if len(result) == 0:
@@ -135,7 +140,7 @@ class event_manager_view(HTTPMethodView):
             DELETE FROM event WHERE id_event = %s;
         """
         try:
-            await request.app.ctx.db.execute(sql, (id))
+            await request.app.ctx.db.execute(sql, (id,))
         except Exception as e:
             return json({"msg": "Event delete fail, error: {}".format(str(e))}, status=400)
         return HTTPResponse(status=204)

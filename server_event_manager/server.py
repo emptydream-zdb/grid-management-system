@@ -9,7 +9,7 @@ from utils import Database
 from event_manage import event_manager_view, init_table
 
 port_run = 8003 # your port number
-dev = True
+dev = False
 app = Sanic("event_manager")
 
 @app.listener('before_server_start')
