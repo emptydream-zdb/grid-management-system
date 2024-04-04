@@ -8,10 +8,9 @@ from sanic import Sanic
 from sanic.response import json
 from sanic import Request
 from utils import Database
-
-
 from user_manage import user_manager_view, init_table
 
+dev = False
 port_run = 8001
 
 app = Sanic("user_manager")
@@ -34,8 +33,8 @@ async def setup_db(app, loop):
 async def close_db(app, loop):
     await app.ctx.db.stop()
 
-app.add_route(user_manager_view.as_view(), "/user/v1", methods=['POST', 'DELETE'], name="user_manager")
-app.add_route(user_manager_view.as_view(), "/user/v1/<id>", methods=['GET', 'PUT'], name="user_manager_id")
+app.add_route(user_manager_view.as_view(), "/user/v1", methods=['POST', 'PUT'], name="user_manager")
+app.add_route(user_manager_view.as_view(), "/user/v1/<id>", methods=['GET', 'DELETE'], name="user_manager_id")
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=port_run, dev=True)
+    app.run(host="0.0.0.0", port=port_run, dev=dev)

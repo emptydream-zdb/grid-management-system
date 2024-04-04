@@ -23,22 +23,37 @@ class user_manager_view(HTTPMethodView):
 
     async def post(self, request):
         """
-        add a user to the database
+        add multiple users to the database
         """
         req = request.json
-        sql = "SELECT id_room FROM user WHERE id_user = %s"
-        result = await request.app.ctx.db.fetch(sql, args=(req["id_user"]))
+        sql_check = "SELECT id_user FROM user WHERE id_user IN(%s)"
+        sql_check = sql_check % ", ".join(["%s"]*len(req))
+        id_users = [item["id_user"] for item in req]
+        result = await request.app.ctx.db.fetch(sql_check, args=tuple(id_users))
         if result != []:
-            return json({"msg": "User already exist"}, status=400)
-        sql = """
+            existing_users = [item['id_user'] for item in result]
+            return json({"msg": "Some users already exist", "existing_users": existing_users}, status=400)
+        
+        sql_insert = """
             INSERT INTO user (id_user, id_room, name, password, user_group, work_unit)
-            VALUES (%s, %s, %s, %s, %s, %s);
+            VALUES %s;
         """
-        try:
-            await request.app.ctx.db.execute(sql, args=(req["id_user"], req["id_room"], req["name"], req["password"], req["group"], req["work_unit"]))
+        sqls = []
+        args = []
+        for i in range(0, len(req), 1000): # Split the data into chunks of 1000 items each
+            arg = []
+            chunk = req[i:i+1000]
+            values = ', '.join(["(%s, %s, %s, %s, %s, %s)"] *len(chunk))
+            sqls.append(sql_insert % values)
+
+            for item in chunk:
+                arg.extend([item["id_user"], item["id_room"], item["name"], item["password"], item["group"], item["work_unit"]])
+            args.append(tuple(arg))
+        try:           
+            await request.app.ctx.db.execute(sqls, args=args)
         except Exception as e:
-            return json({"msg": "User not added, error:{}".format(str(e))}, status=400)
-        return json({"msg": "User added successfully"})
+            return json({"msg": "Users not added, error:{}".format(str(e))}, status=400)
+        return json({"msg": "Users added successfully"})
     
     async def get(self, request, id):
         """
@@ -46,87 +61,95 @@ class user_manager_view(HTTPMethodView):
         """
         req = request.json
         if request.args.get("class") == "user":            
-            if request.args.get("passwd") != None:
+            if request.args.get("passwd") == "true":
                 sql = "SELECT password FROM user WHERE id_user = %s"
                 try:
                     result = await request.app.ctx.db.fetch(sql, args=(id))
                 except Exception as e:
                     return json({"msg": "User not found, error:{}".format(str(e))}, status=400)
-                return json({"msg":"success!","data": result[0][0]})
+                return json({"msg":"success!","data": result[0]["password"]}, status=201)
             else:
                 sql = "SELECT * FROM user WHERE id_user = %s"
                 try:
                     result = await request.app.ctx.db.fetch(sql, args=(id))
                 except Exception as e:
                     return json({"msg": "query fail, error:{}".format(str(e))}, status=400)
-                if result == []:
-                    return json({"msg": "User not found"}, status=400)
-                for x in result:
-                    x["group"] = x["user_group"]
-                    del x["user_group"]
-                return json({"msg":"success!","data": result})
         else:
-            sql = "SELECT * FROM user WHERE id_room = %s"
+            id_detail = id.split("-")
+            id_detail.append("0") #为了方便处理，添加一个0
+            for i, item in enumerate(id_detail):
+                if int(item) == 0:
+                    break;
+            pattern = "-".join(id_detail[:i]) + "%"
+            sql = "SELECT * FROM user WHERE id_room LIKE %s ORDER BY id_room ASC, id_user ASC"
             try:
-                result = await request.app.ctx.db.fetch(sql, args=(id))
+                result = await request.app.ctx.db.fetch(sql, args=(pattern))
             except Exception as e:
                 return json({"msg": "query fail, error:{}".format(str(e))}, status=400)
-            if result == []:
-                return json({"msg": "User not found"}, status=400)
-            return json({"msg":"success!","data": result})
+        if result == []:
+            return json({"msg": "User not found"}, status=410)
+        for x in result:
+            x["group"] = x["user_group"]
+            del x["user_group"]
+            del x["password"]
+        return json({"msg":"success!","data": result})
     
-    async def delete(self, request):
+    async def delete(self, request, id):
         """
         TODO: delete a user from the database
         """
         req = request.json
         sql = "SELECT password FROM user WHERE id_user = %s"
         try:
-            result = await request.app.ctx.db.fetch(sql, args=[(req["id_user"])])
+            result = await request.app.ctx.db.fetch(sql, args=(id))
         except Exception as e:
-            return json({"msg": "delete, error:{}".format(str(e))}, status=400)
+            return json({"msg": "delete error:{}".format(str(e))}, status=400)
         
         if result == []:
-            return json({"msg": "User not exist"}, status=400)
-        
-        if result[0]["password"] != req["password"]:
-            return json({"msg": "Password error"}, status=400)
+            return json({"msg": "User not exist"}, status=410)
         
         sql = "DELETE FROM user WHERE id_user = %s"
         try:
-            await request.app.ctx.db.execute(sql, args=(req["id_user"]))
+            await request.app.ctx.db.execute(sql, args=(id))
         except Exception as e:
             return json({"msg": "User not deleted, error:{}".format(str(e))}, status=400)
         return HTTPResponse(status=204)
     
-    async def put(self, request, id):
+    async def put(self, request):
         """
-        update a user in the database
+        update multiple users in the database
         """
         req = request.json
-        sql = "SELECT password FROM user WHERE id_user = %s"
-        try:
-            result = await request.app.ctx.db.fetch(sql, args=[(id)])
-        except Exception as e:
-            return json({"msg": "update fail!, error:{}".format(str(e))}, status=400)
-        if result == []:
-            return json({"msg": "User not exist"}, status=400)
-        if req.get("group") != None:
-            req["user_group"] = req["group"]
-            del req["group"]
-        update_items = []
+        sql_check = "SELECT id_user FROM user WHERE id_user IN (%s)"
+        sql_check = sql_check % ", ".join(["%s"]*len(req))
+        id_users = [item["id_user"] for item in req]
+        result = await request.app.ctx.db.fetch(sql_check, tuple(id_users))
+        existing_users = [item['id_user'] for item in result]
+        non_existing_users = list(set(id_users) - set(existing_users))
+        if non_existing_users != []:
+            return json({"msg": "Some users do not exist", "non_existing_users": non_existing_users}, status=410)
+
+        updates = []
         args = []
-        for key, value in req.items():
-            update_items.append(f"{key} = %s")
-            args.append(value)
-        update_str = ", ".join(update_items)
-        args.append(id)
-        sql = f"UPDATE user SET {update_str} WHERE id_user = %s"
+        for item in req:
+            if item.get("group") != None:
+                item["user_group"] = item["group"]
+                del item["group"]
+            update_items = []
+            arg = []
+            for key, value in item.items():
+                if key != "id_user":
+                    update_items.append(f"{key} = %s")
+                    arg.append(value)
+            update_str = ", ".join(update_items)
+            arg.append(item["id_user"])
+            updates.append(f"UPDATE user SET {update_str} WHERE id_user = %s")
+            args.append(tuple(arg))
         try:
-            await request.app.ctx.db.execute(sql, args=tuple(args))
+            await request.app.ctx.db.execute(updates, args=args)
         except Exception as e:
-            return json({"msg": "User not updated, error:{}".format(str(e))}, status=400)
-        return json({"msg": "User updated successfully"})
+            return json({"msg": "Users not updated, error:{}".format(str(e))}, status=400)
+        return json({"msg": "Users updated successfully"})
 
 
 
