@@ -8,6 +8,7 @@ import httpx
 from sanic import Sanic
 from sanic.response import json
 from user_manage import user_manage_view
+from event_manage import event_manage_view
 
 port_run = 10000 # your port number
 dev = True
@@ -25,6 +26,9 @@ async def close_db(app, loop):
 # 添加用户管理相关API路由
 app.add_route(user_manage_view.as_view(), "/user/v1", methods=['POST', 'PUT'], name= "user_manage")
 app.add_route(user_manage_view.as_view(), "/user/v1/<id>", methods=['GET', 'DELET'], name= "user_manage_id")
+
+app.add_route(event_manage_view.as_view(), "/event/v1", methods=['POST'], name= "event_manage")
+app.add_route(event_manage_view.as_view(), "/event/v1/<id>", methods=['GET', 'DELET', 'PUT'], name= "event_manage_id")
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=port_run, dev = dev)

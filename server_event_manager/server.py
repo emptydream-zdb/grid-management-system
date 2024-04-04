@@ -24,7 +24,7 @@ async def setup_db(app, loop):
     """
     user = "root"
     password = "251314"
-    database = "event_test"
+    database = "test_event"
     app.ctx.db = Database("127.0.0.1", 3306, user, password, database)
     await app.ctx.db.start(loop)
     await init_table(app)
@@ -33,7 +33,8 @@ async def setup_db(app, loop):
 async def close_db(app, loop):
     await app.ctx.db.stop()
 
-app.add_route(event_manager_view.as_view(), "/event/v1/<id>", name= "event_manager_view")
+app.add_route(event_manager_view.as_view(), "/event/v1", methods=["POST"], name= "event_manager")
+app.add_route(event_manager_view.as_view(), "/event/v1/<id>", methods=["PUT", "GET", "DELETE"],name= "event_manager_id")
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=port_run, dev=dev)
