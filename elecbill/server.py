@@ -1,10 +1,9 @@
 from sanic import Sanic, response
-from dbmanage import DB
 import pymysql
 import datetime
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
-from routes import initelecbill, elecbill, data
+from event_manage import *
 from load_config import *
 
 app = Sanic("elecbillApp")
