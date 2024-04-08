@@ -1,9 +1,11 @@
 from sanic import Sanic, response
-from dbmanage import DB
+from sanic import Websocket, Request
+
 import pymysql
 import datetime
+import jwt
 
-from routes import initelecbill, elecbill, data
+from event_manage import *
 from load_config import *
 
 app = Sanic("elecbillApp")
@@ -35,10 +37,36 @@ async def close_db(app, loop):
     await app.ctx.db.stop()
 
 
+@app.middleware('request')
+async def custom_middleware(request):
+    if request.path.startswith("/hb/<token>"):
+        try:
+            queries = request.args
+            token = queries['token'][0]
+            id = queries['id'][0]
+
+            db = app.ctx.db
+            db.execute("SELECT * FROM device WHERE id = %s", (id))
+            if device == []:
+                return response.json({"error": "Device not found"}, status=410)
+            
+            decoded_token = jwt.decode(token, password, algorithms=['HS256'], verify=False)
+            if decoded_token['id'] != id:
+                return response.json({"error": "Invalid token"}, status=401)
+
+            return None
+
+        except Exception as e:
+            return response.json({"error": "Invalid request"}, status=400)
+
+
 app.add_route(deviceRegistration.as_view(), "/device/registration/v1/<id>", name = "device-registration")
 app.add_route(deviceVerification.as_view(), "/device/verification/v1/<id>", name = "device-verification")
-app.add_route(device.as_view(), "/device/v1/<id>", name = "device")
-app.add_route(switch.as_view(), "/switch/v1/<reason>", name = "switch")
+app.add_route(device.as_view(), "/device/v1/<id>", name = "device_id", methods = ['PUT', 'DELETE'])
+app.add_route(device.as_view(), "/device/v1", name = "device", methods = ['GET'])
+app.add_websocket_route(heartbeat, '/hb')
+# app.add_websocket(, '/')
+
 
 
 if __name__ == "__main__":
