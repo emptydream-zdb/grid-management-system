@@ -1,6 +1,49 @@
+import aiomysql
+import datetime
+
 from sanic.views import HTTPMethodView
 from sanic.response import json, HTTPResponse
-from dbmanage import Database
+
+import os
+import sys
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+sys.path.append(os.path.join(BASE_DIR, "..")) # 添加父级目录到系统路径,以解决模块导入问题
+
+from utils import Database, Snowflake
+
+
+class DB(Database):
+    def __init__(self, host, port, user, password, name):
+        super().__init__(host, port, user, password, name)
+
+    async def init_table(self):
+        """
+        Create the table if it doesn't exist
+        """
+        query = ["""
+        CREATE TABLE IF NOT EXISTS elecbill (
+            id VARCHAR(20) NOT NULL PRIMARY KEY,
+            bill DOUBLE(16,2) NOT NULL
+        )
+        """,
+        """
+        CREATE TABLE IF NOT EXISTS elecdata_day (
+            uuid BIGINT NOT NULL PRIMARY KEY,
+            id VARCHAR(20) NOT NULL,
+            data DOUBLE(16,2) NOT NULL,
+            time TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL
+        )
+        """,
+        """
+        CREATE TABLE IF NOT EXISTS elecdata_hour (
+            uuid BIGINT NOT NULL PRIMARY KEY,
+            id VARCHAR(20) NOT NULL,
+            data DOUBLE(16,2) NOT NULL,
+            time TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL
+        )
+        """]
+        await self.execute(query)
+
 
 class initelecbill(HTTPMethodView):
 
@@ -57,14 +100,6 @@ class elecbill(HTTPMethodView):
         return json({"data":{"elecbill": res}}, status=200)
 
 
-import os
-import sys
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-sys.path.append(os.path.join(BASE_DIR, "..")) # 添加父级目录到系统路径,以解决模块导入问题
-
-from utils import Snowflake
-
-import datetime
 class data(HTTPMethodView):
 
     async def post(self, request):
@@ -134,12 +169,12 @@ class data(HTTPMethodView):
         else:
             # 生成起始日期和结束日期的时间戳
             now = datetime.datetime.now()
-            if req['time_start'] and req['time_start'] < datetime.datetime(now.year, now.month, now.day):
-                time_start = datetime.datetime.strptime(req['time_start'])
+            if req['time_start'] and datetime.datetime.strptime(req['time_start'], "%Y-%m-%d") < datetime.datetime(now.year, now.month, now.day):
+                time_start = datetime.datetime.strptime(req['time_start'], "%Y-%m-%d")
             else:
                 time_start = now - datetime.timedelta(days=1)
             if req['time_end']:
-                time_end = datetime.datetime.strptime(req['time_end'])
+                time_end = datetime.datetime.strptime(req['time_end'], "%Y-%m-%d")
             else:
                 time_end = now
 
@@ -177,4 +212,4 @@ class data(HTTPMethodView):
             for item in res_this_hour:
                 data_detail.append({'time': item['time'].isoformat(), 'data': item['data']})
             resp = {'id': id, 'data_sum': res_this_day[0]['data'], 'data_detail': data_detail, 'data_sub': []}
-        return json({"data": resp}, status=200)        
+        return json({"data": resp}, status=200)

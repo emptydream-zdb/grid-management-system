@@ -17,6 +17,13 @@ app = Sanic("sourth_controll")
 
 app.update_config(os.path.join(current_file_dir, "sanic_config.conf")) # 从配置文件中加载配置
 
+@app.middleware("response")
+async def add_csp(request, response):
+    response.headers["Access-Control-Allow-Origin"] = "*"
+    response.headers["Access-Control-Allow-Headers"] = "*"
+    response.headers["Access-Control-Allow-Methods"] = "*"
+    response.headers["Access-Control-Request-Headers"] = "*"
+    
 @app.listener('before_server_start')
 async def setup_db(app, loop):
     app.ctx.client = httpx.AsyncClient() # 创建一个异步HTTP客户端,用于向其他服务发起请求
