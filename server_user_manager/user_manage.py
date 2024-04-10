@@ -62,14 +62,20 @@ class user_manager_view(HTTPMethodView):
         req = request.json
         if request.args.get("class") == "user":            
             if request.args.get("passwd") == "true":
-                sql = "SELECT password FROM user WHERE id_user = %s"
+                sql = "SELECT password, user_group, id_room FROM user WHERE id_user = %s"
                 try:
                     result = await request.app.ctx.db.fetch(sql, args=(id))
                 except Exception as e:
                     return json({"msg": "User not found, error:{}".format(str(e))}, status=400)
-                return json({"msg":"success!","data": result[0]["password"]}, status=201)
+                if result == []:
+                    return json({"msg": "User not found"}, status=410)
+                
+                result[0]["group"] = result[0]["user_group"]
+                del result[0]["user_group"]
+                result = result[0]
+                return json(result, status=201)
             else:
-                sql = "SELECT * FROM user WHERE id_user = %s"
+                sql = "SELECT id_user, id_room, name, user_group, work_unit FROM user WHERE id_user = %s"
                 try:
                     result = await request.app.ctx.db.fetch(sql, args=(id))
                 except Exception as e:
@@ -91,7 +97,6 @@ class user_manager_view(HTTPMethodView):
         for x in result:
             x["group"] = x["user_group"]
             del x["user_group"]
-            del x["password"]
         return json({"msg":"success!","data": result})
     
     async def delete(self, request, id):
