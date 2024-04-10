@@ -262,7 +262,6 @@ class device(HTTPMethodView):
 
                 nested_device = {
                     "id": device["id"],
-                    "salt": device["salt"],
                     "state": device["state"],
                     "hardware": {
                         "sn": device["hardware_sn"],

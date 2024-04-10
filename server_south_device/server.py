@@ -10,6 +10,13 @@ from load_config import *
 
 app = Sanic("elecbillApp")
 
+@app.middleware("response")
+async def add_csp(request, response):
+    response.headers["Access-Control-Allow-Origin"] = "*"
+    response.headers["Access-Control-Allow-Headers"] = "*"
+    response.headers["Access-Control-Allow-Methods"] = "*"
+    response.headers["Access-Control-Request-Headers"] = "*"
+
 @app.listener('before_server_start')
 async def setup(app, loop):
     """
