@@ -9,6 +9,8 @@ class device_manage_view(HTTPMethodView):
 
     @authorize("none")
     async def post(self, request, id):
+        if re.match(r"^[0-9]+-[0-9]+-[0-9]+$", id) is None:
+            return json({"errorcode": "0", "msg": "Path error: \"id\" device is required and must be a num-num-num"}, status=422)
         req = request.json
         try:
             Device_post(**req)
