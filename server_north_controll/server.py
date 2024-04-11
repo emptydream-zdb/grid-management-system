@@ -43,13 +43,15 @@ app.add_route(event_manage_view.as_view(), "/event/v1/<id>", methods=['GET', 'DE
 app.add_route(elecbill_manage_view.as_view(), "/elecbill/v1/<room_id>", methods=['PUT', 'DELETE'], name= "data_manage_id")
 app.add_route(elecbill_manage_view.as_view(), "/elecbill/v1", methods=['POST'], name= "data_manage")
 
-app.add_route(get_elec_used_data, "/data/used/v1/<room_id>", methods=['GET'], name= "elec_used_data")
+app.add_route(get_elec_used_data, "/data/used/v1/<room_id>", methods=['POST'], name= "elec_used_data")
 app.add_route(get_elec_real_data, "/data/real/v1/<room_id>", methods=['GET'], name= "elec_real_data")
 
 app.add_route(login, "/login/v1", methods=['PUT'], name= "login")
 app.add_route(refresh, "/refresh/v1", methods=['GET'], name= "refresh")
 
-app.add_route(device_manage_view.as_view(), "/device/v1/<id>", methods=['POST', 'GET', 'DELETE', 'PUT'], name= "device_manage")
+app.add_route(device_manage_view.as_view(), "/device/v1/<id>", methods=['POST', 'DELETE', 'PUT'], name= "device_manage_id")
+app.add_route(device_manage_view.as_view(), "/device/v1/", methods=['GET'], name= "device_manage")
+
 
 if __name__ == "__main__":
     app.run(host=app.config.HOST, port=app.config.PORT, dev = app.config.DEV)

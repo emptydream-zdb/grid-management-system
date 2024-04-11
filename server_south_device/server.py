@@ -76,4 +76,4 @@ app.add_websocket_route(heartbeat, '/hb')
 
 
 if __name__ == "__main__":
-    app.run(host=server['host'], port=server['port'], dev=True)
+    app.run(host=server['host'], port=server['port'], dev=False)

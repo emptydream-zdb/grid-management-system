@@ -101,12 +101,10 @@ class elecbill(HTTPMethodView):
             '''
         req = request.json
         cur = await db.fetch('SELECT bill FROM elecbill WHERE id = %s', req['id'])
-        cur = cur[0]['bill']
         if cur == []:
             return json({"msg": "id not exist!"}, status=410)
-        else:
-            res = cur + req['num']
-            await db.execute(sql, (res, req['id']))
+        res = cur[0]['bill'] + req['num']
+        await db.execute(sql, (res, req['id']))
         return json({"data":{"elecbill": res}}, status=200)
 
 
@@ -158,7 +156,7 @@ class data(HTTPMethodView):
 
         return json({"msg": "data added successfully"}, status=200)
 
-    async def get(self, request, id):
+    async def put(self, request, id):
         db = request.app.ctx.db
         sql_like_hour = '''
             SELECT * FROM elecdata_hour WHERE id LIKE %s AND time BETWEEN %s AND %s
@@ -174,21 +172,19 @@ class data(HTTPMethodView):
         '''
         req = request.json
         
-        if 'time_start' not in req or 'time_end' not in req:
-            # 参数错误
-            return json({"msg": "parameter error"}, status=422)
+        # 生成起始日期和结束日期的时间戳
+        now = datetime.datetime.now()
+        # 如果开始时间不存在, 则直接返回一天内的数据,忽视结束时间.
+        if req.get("time_start") == None or req.get("time_start") == "" or req.get("time_start") == "null":
+            time_start = now - datetime.timedelta(days=1)
+            time_end = now
         else:
-            # 生成起始日期和结束日期的时间戳
-            now = datetime.datetime.now()
-            if req['time_start'] and datetime.datetime.strptime(req['time_start'], "%Y-%m-%d") < datetime.datetime(now.year, now.month, now.day):
-                time_start = datetime.datetime.strptime(req['time_start'], "%Y-%m-%d")
-            else:
-                time_start = now - datetime.timedelta(days=1)
-            if req['time_end']:
-                time_end = datetime.datetime.strptime(req['time_end'], "%Y-%m-%d")
-            else:
+            time_start = datetime.datetime.strptime(req['time_start'], "%Y-%m-%d")
+            # 如果开始时间存在,结束时间不存在,则结束时间为当前
+            if req.get("time_end") == None or req.get("time_end") == "" or req.get("time_end") == "null":
                 time_end = now
-
+            else:
+                time_end = datetime.datetime.strptime(req['time_end'], "%Y-%m-%d")
         if (await db.fetch(sql_equal_hour, (id, time_start, time_end))) == []:
             # id不存在
             return json({"msg": "id not exist!"}, status=410)

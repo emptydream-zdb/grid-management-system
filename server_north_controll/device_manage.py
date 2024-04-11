@@ -7,7 +7,7 @@ import re
 
 class device_manage_view(HTTPMethodView):
 
-    @authorize("none")
+    @authorize("admin")
     async def post(self, request, id):
         if re.match(r"^[0-9]+-[0-9]+-[0-9]+$", id) is None:
             return json({"errorcode": "0", "msg": "Path error: \"id\" device is required and must be a num-num-num"}, status=422)
@@ -26,12 +26,17 @@ class device_manage_view(HTTPMethodView):
         return HTTPResponse(body=result.content, status=result.status_code)
         
     
-    @authorize("none")
-    async def get(self, request, id):
-        if re.match(r"^[0-9]+-[0-9]+-[0-9]+$", id) is None:
-            return json({"errorcode": "0", "msg": "Path error: \"id\" device is required and must be a num-num-num"}, status=422)
+    @authorize("admin")
+    async def get(self, request):
+        id = request.args.get("id")
         state = request.args.get("state")
-        if state is not None:
+        if not id is None:
+            if re.match(r"^[0-9]+-[0-9]+-[0-9]+$", id) is None:
+                return json({"errorcode": "0", "msg": "Path error: \"id\" device is required and must be a num-num-num"}, status=422)
+        if id is None and state is None:
+            return json({"errorcode": "0", "msg": "Query error: \"id\" or \"state\" can not both be empty"}, status=422)
+        
+        if id is None and state is not None:
             if state not in ["normal", "lost"]:
                 return json({"errorcode": "1", "msg": "Query error: \"state\" arg must be \"normal\" or \"lost\""}, status=422)
         try:
@@ -40,7 +45,7 @@ class device_manage_view(HTTPMethodView):
             return json({"msg": "error: {}".format(str(e))}, status=400)
         return HTTPResponse(body=result.content, status=result.status_code)
     
-    @authorize("none")
+    @authorize("admin")
     async def delete(self, request, id):
         if re.match(r"^[0-9]+-[0-9]+-[0-9]+$", id) is None:
             return json({"errorcode": "0", "msg": "Path error: \"id\" device is required and must be a num-num-num"}, status=422)
@@ -49,7 +54,7 @@ class device_manage_view(HTTPMethodView):
         except Exception as e:
             return json({"msg": "error: {}".format(str(e))}, status=400)
         return HTTPResponse(body=result.content, status=result.status_code)
-    @authorize("none")
+    @authorize("admin")
     async def put(self, request, id):
         if re.match(r"^[0-9]+-[0-9]+-[0-9]+$", id) is None:
             return json({"errorcode": "0", "msg": "Path error: \"id\" device is required and must be a num-num-num"}, status=422)
