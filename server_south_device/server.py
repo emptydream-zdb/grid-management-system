@@ -57,7 +57,7 @@ async def custom_middleware(request):
             if device == []:
                 return response.json({"error": "Device not found"}, status=410)
             
-            decoded_token = jwt.decode(token, password, algorithms=['HS256'], verify=False)
+            decoded_token = jwt.decode(token, algorithms=['HS256'], verify=False)
             if decoded_token['id'] != id:
                 return response.json({"error": "Invalid token"}, status=401)
 
