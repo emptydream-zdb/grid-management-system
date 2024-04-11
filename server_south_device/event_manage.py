@@ -252,44 +252,49 @@ class device(HTTPMethodView):
             try:
                 if 'id' in queries:
                     device = await db.fetch("SELECT * FROM devices WHERE id = %s", queries['id'])
-                    if device == []:
-                        return json({"msg": "Device not found"}, status=410)
-                    device = device[0]  # Get the first device from the result
+                elif 'state' in queries:
+                    device = await db.fetch("SELECT * FROM devices WHERE state = %s", queries['state'])
                 else:
                     return json({"errorcode": 1, "msg": "no query"}, status=400)
 
-                nested_device = {
-                    "id": device["id"],
-                    "state": device["state"],
-                    "hardware": {
-                        "sn": device["hardware_sn"],
-                        "model": device["hardware_model"]
-                    },
-                    "software": {
-                        "base": {
-                            "version": device["software_base_version"],
-                            "lastUpdate": device["software_base_lastUpdate"],
-                            "status": device["software_base_status"]
+                if device == []:
+                    return json({"msg": "Device not found"}, status=410)
+
+                devices = []
+                for item in device:
+                    nested_device = {
+                        "id": item["id"],
+                        "state": item["state"],
+                        "hardware": {
+                            "sn": item["hardware_sn"],
+                            "model": item["hardware_model"]
                         },
-                        "work": {
-                            "version": device["software_work_version"],
-                            "lastUpdate": device["software_work_lastUpdate"],
-                            "status": device["software_work_status"]
-                        }
-                    },
-                    "nic": {
-                        "eth": {
-                            "mac": device["nic_eth_mac"],
-                            "ipv4": device["nic_eth_ipv4"]
+                        "software": {
+                            "base": {
+                                "version": item["software_base_version"],
+                                "lastUpdate": item["software_base_lastUpdate"],
+                                "status": item["software_base_status"]
+                            },
+                            "work": {
+                                "version": item["software_work_version"],
+                                "lastUpdate": item["software_work_lastUpdate"],
+                                "status": item["software_work_status"]
+                            }
                         },
-                        "wifi": {
-                            "mac": device["nic_wifi_mac"],
-                            "ipv4": device["nic_wifi_ipv4"]
+                        "nic": {
+                            "eth": {
+                                "mac": item["nic_eth_mac"],
+                                "ipv4": item["nic_eth_ipv4"]
+                            },
+                            "wifi": {
+                                "mac": item["nic_wifi_mac"],
+                                "ipv4": item["nic_wifi_ipv4"]
+                            }
                         }
                     }
-                }
+                    devices.append(nested_device)
 
-                return json(nested_device)
+                return json({"msg": "successful", "data": devices})
             
             except Exception as e:
                 return json({"status": "failed", "error": str(e)}, status=400)
