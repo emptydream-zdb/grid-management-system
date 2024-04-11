@@ -9,11 +9,13 @@ from sanic import Sanic
 from sanic.response import json
 from user_manage import user_manage_view
 from event_manage import event_manage_view
+from data_bill_manage import elecbill_manage_view, get_elec_used_data, get_elec_real_data
+from authorize import login, refresh
 
-port_run = 10000 # your port number
-dev = True
 
 app = Sanic("sourth_controll")
+
+app.update_config(os.path.join(current_file_dir, "sanic_config.conf")) # 从配置文件中加载配置
 
 @app.middleware("response")
 async def add_csp(request, response):
@@ -32,10 +34,17 @@ async def close_db(app, loop):
 
 # 添加用户管理相关API路由
 app.add_route(user_manage_view.as_view(), "/user/v1", methods=['POST', 'PUT'], name= "user_manage")
-app.add_route(user_manage_view.as_view(), "/user/v1/<id>", methods=['GET', 'DELET'], name= "user_manage_id")
+app.add_route(user_manage_view.as_view(), "/user/v1/<id>", methods=['GET', 'DELETE'], name= "user_manage_id")
 
 app.add_route(event_manage_view.as_view(), "/event/v1", methods=['POST'], name= "event_manage")
-app.add_route(event_manage_view.as_view(), "/event/v1/<id>", methods=['GET', 'DELET', 'PUT'], name= "event_manage_id")
+app.add_route(event_manage_view.as_view(), "/event/v1/<id>", methods=['GET', 'DELETE', 'PUT'], name= "event_manage_id")
+
+app.add_route(elecbill_manage_view.as_view(), "/elecbill/v1/<room_id>", methods=['GET', 'PUT', 'DELETE'], name= "data_manage_id")
+app.add_route(get_elec_used_data, "/data/used/v1/<room_id>", methods=['GET'], name= "elec_used_data")
+app.add_route(get_elec_real_data, "/data/real/v1/<room_id>", methods=['GET'], name= "elec_real_data")
+
+app.add_route(login, "/login/v1", methods=['PUT'], name= "login")
+app.add_route(refresh, "/refresh/v1", methods=['GET'], name= "refresh")
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=port_run, dev = dev)
+    app.run(host=app.config.HOST, port=app.config.PORT, dev = app.config.DEV)

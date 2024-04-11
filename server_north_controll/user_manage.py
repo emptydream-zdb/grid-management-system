@@ -4,6 +4,7 @@ from sanic.response import json, HTTPResponse
 from sanic_ext import validate
 from pydantic import BaseModel, Field # 使用pydantic用来做参数校验
 from pydantic import ValidationError # 引入ValidationError异常类
+from authorize import authorize
 
 # 以下为Body参数数据模型定义, 建议在每个HTTPMethodView同文件中定义一个数据模型, 用于数据校验
 class User_Post(BaseModel): # 新建用户 User Model
@@ -25,6 +26,7 @@ class User_Put(BaseModel): # 更新用户 User Model
 
 
 class user_manage_view(HTTPMethodView):
+    @authorize("admin")
     async def post(self, request):
         """
         添加用户, 参数校验, 转发请求
@@ -44,11 +46,11 @@ class user_manage_view(HTTPMethodView):
             return json({"msg": "error: {}".format(str(e))}, status=400)
         return HTTPResponse(body=result.content, status=result.status_code)
     
+    @authorize("user")
     async def get(self, request, id):
         """
         查询用户, 参数校验, 转发请求
         """
-        req = request.json
         cls = request.args.get("class")
         cls_pattern = r"^(room|user)$"
         cls = "" if cls == None else cls
@@ -58,7 +60,20 @@ class user_manage_view(HTTPMethodView):
             user_pattern = r"^[0-9]+$"
             if not re.match(user_pattern, id):
                 return json({"errorcode": "0", "msg": "Path error: \"id\" user is required and must be a number"}, status=422)
+            
+            # 用户只能查看自己的信息
+            if request.ctx.group == "user":
+                if id != request.ctx.id_user:
+                    return json({"msg": "You can only check your info!"}, status=401)
         else:
+            # 用户只能查看自己的信息
+            if request.ctx.group == "user":
+            #检测room_id 是否是用户所在的房间
+                req_split = id.split("-")
+                user_split = request.ctx.id_room.split("-")
+                if req_split[:-1] != user_split[:-1]:
+                    return json({"msg": "You can only check your room!"}, status=401)
+            
             room_pattern = r"^[0-9]+-[0-9]+-[0-9]+$"
             if not re.match(room_pattern, id):
                 return json({"errorcode": "0", "msg": "Path error: \"id\" room is required and must be a number-number-number"}, status=422)
@@ -68,6 +83,7 @@ class user_manage_view(HTTPMethodView):
             return json({"msg": "error: {}".format(str(e))}, status=400)
         return HTTPResponse(body=result.content, status=result.status_code)
     
+    @authorize("admin")
     async def delete(self, request, id):
         user_pattern = r"^[0-9]+$"
         if not re.match(user_pattern, id):
@@ -78,8 +94,13 @@ class user_manage_view(HTTPMethodView):
             return json({"msg": "error: {}".format(str(e))}, status=400)
         return HTTPResponse(body=result.content, status=result.status_code)
     
+    @authorize("user")
     async def put(self, request):
         req = request.json
+        group = request.ctx.user_group
+        if group == "user":
+            if len(req) > 1 or req[0].get("id_user") != request.ctx.id_user:
+                return json({"msg": "Insufficient permissions!"}, status=401)
         for i, item in enumerate(req):
             try:
                 User_Put(**item)

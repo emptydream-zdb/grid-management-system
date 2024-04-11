@@ -23,7 +23,7 @@ async def start_redis(appp) -> None:
     Args:
         app: The Sanic application object.
     """
-    app.ctx.redis = await aioredis.from_url("redis://localhost", encoding="utf-8")
+    app.ctx.redis = await aioredis.from_url("redis://localhost", encoding="utf-8", decode_responses=True)
 
 @app.listener('after_server_stop')
 async def close_db(app):
@@ -65,7 +65,7 @@ async def get_data(request, id):
     if data == []:
         return response.json({"msg": "data not found"}, status=410)
 
-    return response.json(data, status=200)
+    return response.json({"msg":"successfully!","data": data}, status=200)
     
 
 
@@ -89,5 +89,5 @@ async def scan_keys(pattern):
 def assemble_data(ids, datas):
     result = []
     for id, data in zip(ids, datas):
-        result.append({"id": id.decode("utf-8"), "data": data.decode("utf-8")})
+        result.append({"id": id, "data": float(data)})
     return result

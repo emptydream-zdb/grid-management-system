@@ -2,9 +2,11 @@ import re
 from datetime import datetime 
 from sanic.views import HTTPMethodView
 from sanic.response import json, HTTPResponse
+from authorize import authorize
 
 class event_manage_view(HTTPMethodView):
 
+    @authorize("user")
     async def post(self, request):
         req = request.json
         id_room = req.get("id_room")
@@ -25,9 +27,19 @@ class event_manage_view(HTTPMethodView):
             return json({"msg": "error: {}".format(str(e))}, status=400)
         return HTTPResponse(body=result.content, status=result.status_code)
     
+    @authorize("user")
     async def get(self, request, id):
         if not re.match("^[0-9]+-[0-9]+-[0-9]+$", id):
             return json({"errorcode": "0","msg": "id_room is error: must be num-num-num"}, status=422)
+        
+        #用户只能查看自己的房间
+        if request.ctx.group == "user":
+            #检测room_id 是否是用户所在的房间
+            req_split = id.split("-")
+            user_split = request.ctx.id_room.split("-")
+            if req_split[:-1] != user_split[:-1]:
+                return json({"msg": "You can only check your room!"}, status=401)
+        
         num = request.args.get("num")
         state = request.args.get("state")
         try:
@@ -36,7 +48,8 @@ class event_manage_view(HTTPMethodView):
             return json({"msg": "error: {}".format(str(e))}, status=400)
         return HTTPResponse(body=result.content, status=result.status_code)
     
-    async def delete(self, request, id):
+    @authorize("user")
+    async def delete(self, request, id): # 用户智只能查到自己房间的事件,所以在这里不需要验证
         req = request.json
         try:
             result = await request.app.ctx.client.delete("http://localhost:8003/event/v1/{}".format(id),json=req)
@@ -44,6 +57,7 @@ class event_manage_view(HTTPMethodView):
             return json({"msg": "error: {}".format(str(e))}, status=400)
         return HTTPResponse(body=result.content, status=result.status_code)
     
+    @authorize("admin")
     async def put(self, request, id):
         req = request.json
         if req.get("result") == None or req.get("result") == "":
