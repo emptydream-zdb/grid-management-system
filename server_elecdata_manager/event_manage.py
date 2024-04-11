@@ -61,16 +61,26 @@ class initelecbill(HTTPMethodView):
 
 class elecbill(HTTPMethodView):
 
-    async def get(self, request, id):
+    async def get(self, request):
         db = request.app.ctx.db
-        sql = '''
-            SELECT bill FROM elecbill WHERE id = %s
+        sql_equal = '''
+            SELECT * FROM elecbill WHERE id = %s
         '''
-        res = await db.fetch(sql, id)
-        if res == []:
-            return json({"msg": "id not exist!"}, status=410)
-        else:
-            return json({"data": {"elecbill": res[0]}})
+        sql_like = '''
+            SELECT * FROM elecbill WHERE id LIKE %s
+        '''
+        ids = request.json['id']
+        elecbill = {}
+        for id in ids:
+            res = []
+            if id[4:7] == '000':
+                res = await db.fetch(sql_like, '{}%'.format(id[:4]))
+            else:
+                res = await db.fetch(sql_equal, id)
+            for item in res:
+                if item['id'] not in elecbill:
+                    elecbill[item['id']] = item['bill']
+        return json({"msg": "successful!", "data":[elecbill]}, status=200)
 
     async def delete(self, request, id):
         db = request.app.ctx.db
