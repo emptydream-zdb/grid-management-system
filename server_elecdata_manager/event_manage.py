@@ -61,7 +61,7 @@ class initelecbill(HTTPMethodView):
 
 class elecbill(HTTPMethodView):
 
-    async def get(self, request):
+    async def post(self, request):
         db = request.app.ctx.db
         sql_equal = '''
             SELECT * FROM elecbill WHERE id = %s
