@@ -122,14 +122,15 @@ class data(HTTPMethodView):
         '''
         req = request.json
 
-        # 判断当前时间是否为凌晨12点
+        # 判断当前时间是否为网上11点
         current_time = datetime.datetime.now().time()
-        is_hour = False if current_time.hour == 22 else True
+        is_hour = False if current_time.hour == 23 else True
 
         # 生成 uuid
         snowflake = Snowflake(datacenter_id=0, worker_id=0)
 
-        if await db.fetch('SELECT id FROM elecdata_hour WHERE id = %s', req['id']) != []:
+        if await db.fetch('SELECT id FROM elecdata_hour WHERE id = %s', req['id']) == []\
+        and await db.fetch('SELECT id FROM elecdata_day WHERE id = %s', req['id']) == []:
             await db.execute(sql_day, (snowflake.generate_uuid(), req['id'], 0))
 
         sum = 0
