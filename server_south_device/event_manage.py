@@ -78,54 +78,6 @@ def generate_salt(id, password):
     return salt
 
 
-class deviceRegistration(HTTPMethodView):
-    async def post(self, request, id):
-        """
-        Register a device with the given id.
-        
-        Args:
-            request: The request object.
-            id: The device id.
-        
-        Returns:
-            A JSON response with the status of the registration.
-        """
-        req = request.json
-        db = request.app.ctx.db
-        sql = '''
-            INSERT INTO devices (id, salt, state, hardware_sn, hardware_model, software_base_version,
-            software_base_lastUpdate, software_base_status, software_work_version, software_work_lastUpdate,
-            software_work_status, nic_eth_mac, nic_eth_ipv4, nic_wifi_mac, nic_wifi_ipv4) VALUES 
-            (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) 
-        '''
-        try:
-            if await db.fetch('SELECT id FROM devices WHERE id = %s', id) != []:
-                return json({"msg": "Device already registered"}, status=410)
-
-            password = generate_random_password(16)
-            salt = generate_salt(id, password)
-            resp = {
-                "msg": "Device registered successfully",
-                "data": {
-                    "id": id,
-                    "password": password
-                }
-            }
-            for key, value in req.items():
-                resp["data"][key] = value
-            await db.execute(sql, (id, salt, req['state'], req['hardware']['sn'], req['hardware']['model'],
-                                   req['software']['base']['version'], req['software']['base']['lastUpdate'],
-                                   req['software']['base']['status'], req['software']['work']['version'],
-                                   req['software']['work']['lastUpdate'], req['software']['work']['status'],
-                                   req['nic']['eth']['mac'], req['nic']['eth']['ipv4'], req['nic']['wifi']['mac'],
-                                   req['nic']['wifi']['ipv4']))
-                        
-            return json(resp, status=200)
-        
-        except Exception as e:
-            return json({"status": "failed", "error": str(e)}, status=400)
-
-
 import time
 class deviceVerification(HTTPMethodView):
     async def post(self, request, id):
@@ -170,6 +122,52 @@ class deviceVerification(HTTPMethodView):
 
 
 class device(HTTPMethodView):
+    async def post(self, request, id):
+        """
+        Register a device with the given id.
+        
+        Args:
+            request: The request object.
+            id: The device id.
+        
+        Returns:
+            A JSON response with the status of the registration.
+        """
+        req = request.json
+        db = request.app.ctx.db
+        sql = '''
+            INSERT INTO devices (id, salt, state, hardware_sn, hardware_model, software_base_version,
+            software_base_lastUpdate, software_base_status, software_work_version, software_work_lastUpdate,
+            software_work_status, nic_eth_mac, nic_eth_ipv4, nic_wifi_mac, nic_wifi_ipv4) VALUES 
+            (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) 
+        '''
+        try:
+            if await db.fetch('SELECT id FROM devices WHERE id = %s', id) != []:
+                return json({"msg": "Device already registered"}, status=410)
+
+            password = generate_random_password(16)
+            salt = generate_salt(id, password)
+            resp = {
+                "msg": "Device registered successfully",
+                "data": {
+                    "id": id,
+                    "password": password
+                }
+            }
+            for key, value in req.items():
+                resp["data"][key] = value
+            await db.execute(sql, (id, salt, req['state'], req['hardware']['sn'], req['hardware']['model'],
+                                    req['software']['base']['version'], req['software']['base']['lastUpdate'],
+                                    req['software']['base']['status'], req['software']['work']['version'],
+                                    req['software']['work']['lastUpdate'], req['software']['work']['status'],
+                                    req['nic']['eth']['mac'], req['nic']['eth']['ipv4'], req['nic']['wifi']['mac'],
+                                    req['nic']['wifi']['ipv4']))
+                        
+            return json(resp, status=200)
+        
+        except Exception as e:
+            return json({"status": "failed", "error": str(e)}, status=400)
+
     async def put(self, request, id):
         """
         Update the device with the given id.

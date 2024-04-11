@@ -67,9 +67,8 @@ async def custom_middleware(request):
             return response.json({"error": "Invalid request"}, status=400)
 
 
-app.add_route(deviceRegistration.as_view(), "/device/registration/v1/<id>", name = "device-registration")
 app.add_route(deviceVerification.as_view(), "/device/verification/v1/<id>", name = "device-verification")
-app.add_route(device.as_view(), "/device/v1/<id>", name = "device_id", methods = ['PUT', 'DELETE'])
+app.add_route(device.as_view(), "/device/v1/<id>", name = "device_id", methods = ['PUT', 'DELETE', 'POST'])
 app.add_route(device.as_view(), "/device/v1", name = "device", methods = ['GET'])
 app.add_websocket_route(heartbeat, '/hb')
 # app.add_websocket(, '/')
