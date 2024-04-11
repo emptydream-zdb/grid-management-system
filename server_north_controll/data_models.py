@@ -1,7 +1,7 @@
 from pydantic import BaseModel
 from enum import Enum
 from typing import Optional
-from pydantic import BaseModel, Field, root_validator, ValidationError
+from pydantic import BaseModel, Field
 
 
 """
@@ -9,8 +9,8 @@ from pydantic import BaseModel, Field, root_validator, ValidationError
 """
 class Hardware(BaseModel):
     """硬件信息"""
-    sn: str
-    model: str
+    sn: str = Field(None, max_length=64)
+    model: str = Field(None, max_length=32)
 
 class SoftwareDetails(BaseModel):
     """软件信息详情"""
@@ -25,36 +25,27 @@ class Software(BaseModel):
 
 class NicDetails(BaseModel):
     """网卡信息详情"""
-    mac: str
-    ipv4: str
+    mac: str = Field(None, max_length=64)
+    ipv4: str = Field(None, max_length=32)
 
 class Nic(BaseModel):
     """网卡信息"""
     eth: NicDetails = Field(None)
     wifi: NicDetails = Field(None)
 
-    @root_validator
-    def check_at_least_one(cls, values):
-        eth, wifi = values.get('eth'), values.get('wifi')
-        if not eth and not wifi:
-            raise ValidationError('至少需要提供一个网卡信息: eth 或 wifi')
-        return values
-
 class Device_post(BaseModel):
     """Device 硬件模型"""
-    id: str = Field(..., pattern = "^[0-9]+-[0-9]+-[0-9]+$",max_length = 20) 
     state: str = Field(..., pattern="^(normal|lost)$")
-    hardware: Hardware = Field(None, max_length = 255)
-    software: Software = Field(None, max_length=500)
-    nic: Nic = Field(None, max_length=500)
+    hardware: Hardware = Field(None)
+    software: Software = Field(None)
+    nic: Nic = Field(None)
 
 class Device_put(BaseModel):
     """Device 硬件模型"""
-    id: str = Field(None, pattern = "^[0-9]+-[0-9]+-[0-9]+$",max_length = 20) 
     state: str = Field(None, pattern="^(normal|lost)$")
-    hardware: Hardware = Field(None, max_length = 255)
-    software: Software = Field(None, max_length=500)
-    nic: Nic = Field(None, max_length=500)
+    hardware: Hardware = Field(None)
+    software: Software = Field(None)
+    nic: Nic = Field(None)
 
 
 

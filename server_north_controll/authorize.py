@@ -36,6 +36,8 @@ def authorize(required_group: str):
                 request = args[1]
             else:
                 request = args[0]
+                
+            req_group = role[required_group.upper()]
             token = request.headers.get('Authorization')
             if not token:
                 if required_group != "none":
@@ -46,7 +48,6 @@ def authorize(required_group: str):
                     # 验证JWT并获取用户角色
                     data = jwt.decode(token, request.app.config.SECRET_KEY, algorithms=['HS256'])
                     group = role[data['group'].upper()]
-                    req_group = role[required_group.upper()]
                 except jwt.ExpiredSignatureError:
                     return json({"msg":"Token expired!"},status=401)
                 except jwt.InvalidTokenError:
