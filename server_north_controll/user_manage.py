@@ -2,27 +2,10 @@ import re
 from sanic.views import HTTPMethodView
 from sanic.response import json, HTTPResponse
 from sanic_ext import validate
-from pydantic import BaseModel, Field # 使用pydantic用来做参数校验
+from data_models import User_Post, User_Put
 from pydantic import ValidationError # 引入ValidationError异常类
 from authorize import authorize
 
-# 以下为Body参数数据模型定义, 建议在每个HTTPMethodView同文件中定义一个数据模型, 用于数据校验
-class User_Post(BaseModel): # 新建用户 User Model
-    # Field 用来定制数据约束, 第一个参数为默认值, ... 表示必填, pattern 为正则表达式约束, max_length 为最大长度约束
-    id_user: str = Field(...) 
-    id_room: str = Field(..., pattern = "^[0-9]+-[0-9]+-[0-9]+$",max_length = 20)
-    name: str = Field(..., max_length = 20)
-    group: str = Field(..., pattern="^(admin|user)$")
-    work_unit: str = Field(..., max_length = 255)
-
-class User_Put(BaseModel): # 更新用户 User Model
-    # Field 用来定制数据约束, 第一个参数为默认值, ... 表示必填, pattern 为正则表达式约束, max_length 为最大长度约束
-    id_user: str = Field(None) 
-    id_room: str = Field(None, pattern = "^[0-9]+-[0-9]+-[0-9]+$",max_length = 20)
-    password: str = Field(None, max_length = 255)
-    name: str = Field(None, max_length = 20)
-    group: str = Field(None, pattern="^(admin|user)$")
-    work_unit: str = Field(None, max_length = 255)
 
 
 class user_manage_view(HTTPMethodView):
