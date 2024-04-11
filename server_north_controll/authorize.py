@@ -11,7 +11,7 @@ class role(IntEnum):
     """
     UNKNOWN = 1
     USER = 2
-    ADMIN = 3
+    NONE = 3
 
 
 from functools import wraps
@@ -38,29 +38,30 @@ def authorize(required_group: str):
                 request = args[0]
             token = request.headers.get('Authorization')
             if not token:
-                return json({"msg":"No token provided!"},status=401)
-            try:
-                # 验证JWT并获取用户角色
-                data = jwt.decode(token, request.app.config.SECRET_KEY, algorithms=['HS256'])
-                group = role[data['group'].upper()]
-                req_group = role[required_group.upper()]
-            except jwt.ExpiredSignatureError:
-                return json({"msg":"Token expired!"},status=401)
-            except jwt.InvalidTokenError:
-                return json({"msg":"Token invalid!"},status=401)
+                if required_group != "none":
+                    return json({"msg":"No token provided!"},status=401)
+                group = role.NONE
+            else:    
+                try:
+                    # 验证JWT并获取用户角色
+                    data = jwt.decode(token, request.app.config.SECRET_KEY, algorithms=['HS256'])
+                    group = role[data['group'].upper()]
+                    req_group = role[required_group.upper()]
+                except jwt.ExpiredSignatureError:
+                    return json({"msg":"Token expired!"},status=401)
+                except jwt.InvalidTokenError:
+                    return json({"msg":"Token invalid!"},status=401)
             # 检查用户是否有足够的权限
             if group < req_group:
                 return json({"msg":"Insufficient permissions!"},status=401)
             
             #把Token中有用字段放入request.ctx中
-            request.ctx.group = data['group']
-            request.ctx.id_user = data['id_user']
-            request.ctx.id_room = data['id_room']
-
-            # 如果是类方法，需要将 'self' 作为第一个参数传递给原始函数
-            # if is_method:
-            #     return await f(self_or_request, request, *args[2:], **kwargs)
-            # else:
+            if group != role.NONE:
+                request.ctx.group = data['group']
+                request.ctx.id_user = data['id_user']
+                request.ctx.id_room = data['id_room']
+            else:
+                request.ctx.group = "none"
             return await f(request, *args[1:], **kwargs)
 
         return decorated_function
