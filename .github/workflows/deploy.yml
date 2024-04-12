@@ -58,14 +58,16 @@ jobs:
       env:
         IMAGE1: ${{ steps.generate-name-1.outputs.IMAGE1 }}
         IMAGE2: ${{ steps.generate-name-2.outputs.IMAGE2 }}
-        ACCESS_TOKEN: ${{ secrets.TOKEN_GITHUB }}
       with:
         command_timeout: 30s
         host: ${{ secrets.HOST }}
         username: ${{ secrets.USERNAME }}
         password: ${{ secrets.PASSWORD }}
-        envs: IMAGE
+        envs: IMAGE1,IMAGE2
         script: | # 运行多行命令
+            echo ${IMAGE1}
+            echo ${IMAGE2}
+            
             echo "[deploy] start deployment..."
             if [ ! -d "app" ]; then
               mkdir "app"
