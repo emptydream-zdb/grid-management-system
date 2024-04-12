@@ -8,7 +8,7 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}
+  REPO_NAME: ${{ github.repository }}
 
 jobs:
   #构建docker镜像并推送到github包仓库
@@ -27,11 +27,11 @@ jobs:
       with:
         registry: ${{ env.REGISTRY }}
         username: ${{ github.actor }}
-        password: ${{ secrets.GITHUB_TOKEN }}
+        password: ${{ secrets.TOKEN_GITHUB }}
 
     - name: generate the image name
       id: generate-name
-      run: echo "IMAGE=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}" >> ${GITHUB_ENV}
+      run: echo "IMAGE1=${{ env.REGISTRY }}/${{ env.REPO_NAME }}:${{ github.sha }}-$(date +%s)" >> ${GITHUB_ENV}
         
     - name: Build and push Docker image
       uses: docker/build-push-action@v5
@@ -39,19 +39,25 @@ jobs:
         context: .
         push: true
         file: ./Dockerfile
-        tags: ${{ env.IMAGE }}
+        tags: ${{ env.IMAGE1 }}
 
-  #在阿里云ECS服务器上部署，使用ssh
-  deploy-on-aliECS:
-    needs: build-and-push-image
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v4
-    
+    - name: generate the second image name
+      id: generate-name-2
+      run: echo "IMAGE2=${{ env.REGISTRY }}/${{ env.REPO_NAME }}-nginx:${{ github.sha }}-$(date +%s)" >> ${GITHUB_ENV}
+
+    - name: Build and push second Docker image
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        push: true
+        file: ./nginx/Dockerfile
+        tags: ${{ env.IMAGE2 }}
+
     - name: ssh-to-ECS
       uses: appleboy/ssh-action@v1.0.3
       env:
-        IMAGE: ${{ env.IMAGE }}
+        IMAGE1: ${{ env.IMAGE1 }}
+        IMAGE2: ${{ env.IMAGE2 }}
         ACCESS_TOKEN: ${{ secrets.TOKEN_GITHUB }}
       with:
         command_timeout: 30s
@@ -68,20 +74,19 @@ jobs:
             cd ~/app
 
             # 停止服务
-
             docker container stop `docker ps -aq`
             docker rm -f $(docker ps -aq)
             docker rmi -f $(docker images -q)
             pkill python3
 
-            #拉取镜像文件
-            echo $ACCESS_TOKEN | docker login ghcr.io -u emptydream-zdb --password-stdin
-            docker pull $IMAGE
-            docker run --network host -d $IMAGE python ./test.py
-            # 测试阶段
-
-      
-  
-        
-
-        
+            echo $CR_PAT | docker login ghcr.io -u emptydream-zdb --password-stdin
+            docker pull ${IMAGE1}
+            docker pull ${IMAGE2}
+            
+            docker run -p 8000:8000 -d ${IMAGE1} python3 ./server_north_controll/server.py
+            docker run -p 8001:8001 -d ${IMAGE1} python3 ./server_user_manager/server.py
+            docker run -p 8002:8002 -d ${IMAGE1} python3 ./server_realtime_data/server.py
+            docker run -p 8003:8003 -d ${IMAGE1} python3 ./server_event_manager/server.py
+            docker run -p 8010:8010 -d ${IMAGE1} python3 ./server_elecdata_manager/server.py
+            docker run -p 8011:8011 -d ${IMAGE1} python3 ./server_south_device/server.py
+            docker run -p 8080:8080 -p 80:80 -d ${IMAGE2} 

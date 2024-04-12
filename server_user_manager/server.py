@@ -10,13 +10,11 @@ from sanic import Request
 from utils import Database
 from user_manage import user_manager_view, init_table
 
-dev = False
-port_run = 8001
-
 app = Sanic("user_manager")
+app.update_config(os.path.join(current_file_dir, "sanic_config.conf")) # 从配置文件中加载配置
 
 @app.listener('before_server_start')
-async def setup_db(app, loop):
+async def setup_db(app: Sanic, loop):
     """
     Set up the database connection before the server starts.
     add the database connection to the app context so that we can access it in HTTPMethodView.
@@ -25,7 +23,7 @@ async def setup_db(app, loop):
         app: The Sanic application object.
         loop: The event loop to use for the database connection.
     """
-    app.ctx.db = Database("127.0.0.1", 3306, "root", "251314", "test_db")
+    app.ctx.db = Database("127.0.0.1", 3306, app.config.DB_USER, app.config.DB_PWD, app.config.DATABASE)
     await app.ctx.db.start(loop)
     await init_table(app)
 
@@ -37,4 +35,4 @@ app.add_route(user_manager_view.as_view(), "/user/v1", methods=['POST', 'PUT'], 
 app.add_route(user_manager_view.as_view(), "/user/v1/<id>", methods=['GET', 'DELETE'], name="user_manager_id")
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=port_run, dev=dev)
+    app.run(host=app.config.HOST, port=app.config.PORT, dev=app.config.DEV)

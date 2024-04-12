@@ -7,12 +7,9 @@ sys.path.append(parent_dir) # 添加父级目录到系统路径,以解决模块�
 from sanic import Sanic
 from sanic import response
 import aioredis
-import ujson as js
-
-port_run = 8002 # your port number
-dev = False
 
 app = Sanic("realtime_data")
+app.update_config(os.path.join(current_file_dir, "sanic_config.conf")) # 从配置文件中加载配置
 
 @app.listener('before_server_start')
 async def start_redis(appp) -> None:
@@ -70,7 +67,7 @@ async def get_data(request, id):
 
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=port_run, dev=dev)
+    app.run(host=app.config.HOST, port=app.config.PORT, dev=app.config.DEV)
 
 """
 ############################################################################################################

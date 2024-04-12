@@ -8,12 +8,12 @@ from sanic import Sanic
 from utils import Database
 from event_manage import event_manager_view, init_table
 
-port_run = 8003 # your port number
-dev = False
 app = Sanic("event_manager")
 
+app.update_config(os.path.join(current_file_dir, "sanic_config.conf")) # 从配置文件中加载配置
+
 @app.listener('before_server_start')
-async def setup_db(app, loop):
+async def setup_db(app: Sanic, loop):
     """
     Set up the database connection before the server starts.
     add the database connection to the app context so that we can access it in HTTPMethodView.
@@ -22,10 +22,7 @@ async def setup_db(app, loop):
         app: The Sanic application object.
         loop: The event loop to use for the database connection.
     """
-    user = "root"
-    password = "251314"
-    database = "test_event"
-    app.ctx.db = Database("127.0.0.1", 3306, user, password, database)
+    app.ctx.db = Database("127.0.0.1", 3306, app.config.DB_USER, app.config.DB_PWD, app.config.DATABASE)
     await app.ctx.db.start(loop)
     await init_table(app)
 
@@ -37,4 +34,4 @@ app.add_route(event_manager_view.as_view(), "/event/v1", methods=["POST"], name=
 app.add_route(event_manager_view.as_view(), "/event/v1/<id>", methods=["PUT", "GET", "DELETE"],name= "event_manager_id")
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=port_run, dev=dev)
+    app.run(host=app.config.HOST, port=app.config.PORT, dev=app.config.DEV)
