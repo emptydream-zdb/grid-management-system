@@ -50,7 +50,7 @@ jobs:
       with:
         context: .
         push: true
-        file: ./nginx/Dockerfile
+        file: ./nginx_conf/Dockerfile
         tags: ${{ env.IMAGE2 }}
 
     - name: ssh-to-ECS
@@ -82,7 +82,7 @@ jobs:
             echo $CR_PAT | docker login ghcr.io -u emptydream-zdb --password-stdin
             docker pull ${IMAGE1}
             docker pull ${IMAGE2}
-            
+
             docker run -p 8000:8000 -d ${IMAGE1} python3 ./server_north_controll/server.py
             docker run -p 8001:8001 -d ${IMAGE1} python3 ./server_user_manager/server.py
             docker run -p 8002:8002 -d ${IMAGE1} python3 ./server_realtime_data/server.py
