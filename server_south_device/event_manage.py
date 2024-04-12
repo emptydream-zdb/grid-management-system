@@ -1,5 +1,3 @@
-import aiomysql
-
 from sanic.views import HTTPMethodView
 from sanic.response import json, HTTPResponse
 

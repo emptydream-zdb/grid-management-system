@@ -2,7 +2,6 @@ from sanic import Sanic, response
 from sanic import Websocket, Request
 
 import pymysql
-import datetime
 import jwt
 
 from event_manage import *
